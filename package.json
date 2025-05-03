@@ -1,0 +1,9 @@
+{
+    "name": "azure-function-blob-json",
+    "version": "1.0.0",
+    "main": "index.js",
+    "dependencies": {
+      "@azure/storage-blob": "^12.14.0"
+    }
+  }
+  
