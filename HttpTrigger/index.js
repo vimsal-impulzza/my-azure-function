@@ -1,34 +1,56 @@
 const { BlobServiceClient } = require('@azure/storage-blob');
 
-const AZURE_STORAGE_CONNECTION_STRING = process.env.AzureWebJobsStorage;
+const accountName  = "datatestingfunction";
 const CONTAINER_NAME = "datatestingfunction";
 const BLOB_NAME = "data.json";
 
 module.exports = async function (context, req) {
-    const blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_STORAGE_CONNECTION_STRING);
-    const containerClient = blobServiceClient.getContainerClient(CONTAINER_NAME);
-    const blockBlobClient = containerClient.getBlockBlobClient(BLOB_NAME);
-
-    if (req.method === "GET") {
-        const downloadBlockBlobResponse = await blockBlobClient.download(0);
-        const downloaded = await streamToString(downloadBlockBlobResponse.readableStreamBody);
+    if (!accountName) {
         context.res = {
-            status: 200,
-            body: JSON.parse(downloaded)
+            status: 500,
+            body: "STORAGE_ACCOUNT_NAME is not defined in environment settings"
         };
-    } else if (req.method === "POST") {
-        const data = req.body;
-        const content = JSON.stringify(data);
-        await blockBlobClient.upload(content, Buffer.byteLength(content), { overwrite: true });
+        return;
+    }
 
+    const credential = new DefaultAzureCredential();
+    const blobServiceClient = new BlobServiceClient(
+        `https://${accountName}.blob.core.windows.net`,
+        credential
+    );
+
+    const containerClient = blobServiceClient.getContainerClient(containerName);
+    const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+    try {
+        if (req.method === "GET") {
+            const downloadBlockBlobResponse = await blockBlobClient.download(0);
+            const downloaded = await streamToString(downloadBlockBlobResponse.readableStreamBody);
+
+            context.res = {
+                status: 200,
+                body: JSON.parse(downloaded)
+            };
+        } else if (req.method === "POST") {
+            const data = req.body;
+            const content = JSON.stringify(data);
+            await blockBlobClient.upload(content, Buffer.byteLength(content), { overwrite: true });
+
+            context.res = {
+                status: 200,
+                body: { message: "JSON actualizado exitosamente" }
+            };
+        } else {
+            context.res = {
+                status: 405,
+                body: "Método no permitido"
+            };
+        }
+    } catch (error) {
+        context.log.error("Error al acceder al blob:", error.message);
         context.res = {
-            status: 200,
-            body: { message: "JSON actualizado exitosamente" }
-        };
-    } else {
-        context.res = {
-            status: 405,
-            body: "Método no permitido"
+            status: 500,
+            body: "Error al acceder al blob: " + error.message
         };
     }
 };
