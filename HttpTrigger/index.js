@@ -1,7 +1,7 @@
 const { BlobServiceClient } = require('@azure/storage-blob');
 
 const AZURE_STORAGE_CONNECTION_STRING = process.env.AzureWebJobsStorage;
-const CONTAINER_NAME = "tu-container";
+const CONTAINER_NAME = "datatestingfunction";
 const BLOB_NAME = "data.json";
 
 module.exports = async function (context, req) {
